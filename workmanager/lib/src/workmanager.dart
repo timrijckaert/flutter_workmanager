@@ -124,8 +124,6 @@ class Workmanager {
   static const String iOSBackgroundProcessingTask =
       "workmanager.background.task";
 
-  static bool _isInDebugMode = false;
-
   MethodChannel _backgroundChannel = const MethodChannel(
       "be.tramckrijte.workmanager/background_channel_work_manager");
   MethodChannel _foregroundChannel = const MethodChannel(
@@ -149,12 +147,7 @@ class Workmanager {
   /// This call is required if you wish to use the [WorkManager] plugin.
   /// [callbackDispatcher] is a top level function which will be invoked by
   /// Android or iOS. See the discussion on [BackgroundTaskHandler] for details.
-  /// [isInDebugMode] true will post debug notifications with information about when a task should have run
-  Future<void> initialize(
-    final Function callbackDispatcher, {
-    final bool isInDebugMode = false,
-  }) async {
-    Workmanager._isInDebugMode = isInDebugMode;
+  Future<void> initialize(final Function callbackDispatcher) async {
     final callback = PluginUtilities.getCallbackHandle(callbackDispatcher);
     assert(callback != null,
         "The callbackDispatcher needs to be either a static function or a top level function to be accessible as a Flutter entry point.");
@@ -163,7 +156,6 @@ class Workmanager {
       await _foregroundChannel.invokeMethod<void>(
         'initialize',
         JsonMapperHelper.toInitializeMethodArgument(
-          isInDebugMode: _isInDebugMode,
           callbackHandle: handle,
         ),
       );
@@ -207,7 +199,6 @@ class Workmanager {
       await _foregroundChannel.invokeMethod(
         "registerOneOffTask",
         JsonMapperHelper.toRegisterMethodArgument(
-          isInDebugMode: _isInDebugMode,
           uniqueName: uniqueName,
           taskName: taskName,
           tag: tag,
@@ -259,7 +250,6 @@ class Workmanager {
       await _foregroundChannel.invokeMethod(
         "registerPeriodicTask",
         JsonMapperHelper.toRegisterMethodArgument(
-          isInDebugMode: _isInDebugMode,
           uniqueName: uniqueName,
           taskName: taskName,
           frequency: frequency,
@@ -311,7 +301,6 @@ class Workmanager {
       await _foregroundChannel.invokeMethod(
         "registerProcessingTask",
         JsonMapperHelper.toRegisterMethodArgument(
-          isInDebugMode: _isInDebugMode,
           uniqueName: uniqueName,
           taskName: taskName,
           initialDelay: initialDelay,
@@ -349,7 +338,6 @@ class Workmanager {
 class JsonMapperHelper {
   @visibleForTesting
   static Map<String, Object?> toRegisterMethodArgument({
-    final bool isInDebugMode = false,
     final String? uniqueName,
     final String? taskName,
     final Duration? frequency,
@@ -384,7 +372,6 @@ class JsonMapperHelper {
     assert(uniqueName != null);
     assert(taskName != null);
     return {
-      "isInDebugMode": isInDebugMode,
       "uniqueName": uniqueName,
       "taskName": taskName,
       "tag": tag,
@@ -406,11 +393,9 @@ class JsonMapperHelper {
 
   @visibleForTesting
   static Map<String, Object?> toInitializeMethodArgument({
-    required final bool isInDebugMode,
     required final int callbackHandle,
   }) {
     return {
-      "isInDebugMode": isInDebugMode,
       "callbackHandle": callbackHandle,
     };
   }

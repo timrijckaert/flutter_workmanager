@@ -72,13 +72,6 @@ class BackgroundWorker {
         let taskSessionStart = Date()
         let taskSessionIdentifier = UUID()
 
-        let debugHelper = DebugNotificationHelper(taskSessionIdentifier)
-        debugHelper.showStartFetchNotification(
-            startDate: taskSessionStart,
-            callBackHandle: callbackHandle,
-            callbackInfo: flutterCallbackInformation
-        )
-
         var flutterEngine: FlutterEngine? = FlutterEngine(
             name: backgroundMode.flutterThreadlabelPrefix,
             project: nil,
@@ -121,11 +114,6 @@ class BackgroundWorker {
                         let taskDuration = taskSessionCompleter.timeIntervalSince(taskSessionStart)
                         logInfo("[\(String(describing: self))] \(#function) -> performBackgroundRequest.\(result) (finished in \(taskDuration.formatToSeconds()))")
 
-                        debugHelper.showCompletedFetchNotification(
-                            completedDate: taskSessionCompleter,
-                            result: result,
-                            elapsedTime: taskDuration
-                        )
                         completionHandler(result)
                     })
             default:

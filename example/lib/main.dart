@@ -134,7 +134,6 @@ class _MyAppState extends State<MyApp> {
                     if (!workmanagerInitialized) {
                       Workmanager().initialize(
                         callbackDispatcher,
-                        isInDebugMode: true,
                       );
                       setState(() => workmanagerInitialized = true);
                     }

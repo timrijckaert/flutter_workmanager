@@ -21,7 +21,6 @@ public class SwiftWorkmanagerPlugin: FlutterPluginAppLifeCycleDelegate {
             struct Initialize {
                 static let name = "\(Initialize.self)".lowercasingFirst
                 enum Arguments: String {
-                    case isInDebugMode
                     case callbackHandle
                 }
             }
@@ -293,13 +292,11 @@ extension SwiftWorkmanagerPlugin: FlutterPlugin {
 
     private func initialize(arguments: [AnyHashable: Any], result: @escaping FlutterResult) {
         let method = ForegroundMethodChannel.Methods.Initialize.self
-        guard let isInDebug = arguments[method.Arguments.isInDebugMode.rawValue] as? Bool,
-              let handle = arguments[method.Arguments.callbackHandle.rawValue] as? Int64 else {
+        guard let handle = arguments[method.Arguments.callbackHandle.rawValue] as? Int64 else {
             result(WMPError.invalidParameters.asFlutterError)
             return
         }
         UserDefaultsHelper.storeCallbackHandle(handle)
-        UserDefaultsHelper.storeIsDebug(isInDebug)
         result(true)
     }
 

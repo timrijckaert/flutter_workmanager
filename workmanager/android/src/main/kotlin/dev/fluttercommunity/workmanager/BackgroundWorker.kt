@@ -32,7 +32,6 @@ class BackgroundWorker(
 
         const val PAYLOAD_KEY = "be.tramckrijte.workmanager.INPUT_DATA"
         const val DART_TASK_KEY = "be.tramckrijte.workmanager.DART_TASK"
-        const val IS_IN_DEBUG_MODE_KEY = "be.tramckrijte.workmanager.IS_IN_DEBUG_MODE_KEY"
 
         const val BACKGROUND_CHANNEL_NAME =
             "be.tramckrijte.workmanager/background_channel_work_manager"
@@ -46,9 +45,6 @@ class BackgroundWorker(
 
     private val dartTask
         get() = workerParams.inputData.getString(DART_TASK_KEY)!!
-
-    private val isInDebug
-        get() = workerParams.inputData.getBoolean(IS_IN_DEBUG_MODE_KEY, false)
 
     private val randomThreadIdentifier = Random().nextInt()
     private var engine: FlutterEngine? = null
@@ -81,18 +77,6 @@ class BackgroundWorker(
             val callbackInfo = FlutterCallbackInformation.lookupCallbackInformation(callbackHandle)
             val dartBundlePath = flutterLoader.findAppBundlePath()
 
-            if (isInDebug) {
-                DebugHelper.postTaskStarting(
-                    applicationContext,
-                    randomThreadIdentifier,
-                    dartTask,
-                    payload,
-                    callbackHandle,
-                    callbackInfo,
-                    dartBundlePath,
-                )
-            }
-
             engine?.let { engine ->
                 backgroundChannel = MethodChannel(engine.dartExecutor, BACKGROUND_CHANNEL_NAME)
                 backgroundChannel.setMethodCallHandler(this@BackgroundWorker)
@@ -116,17 +100,6 @@ class BackgroundWorker(
 
     private fun stopEngine(result: Result?) {
         val fetchDuration = System.currentTimeMillis() - startTime
-
-        if (isInDebug) {
-            DebugHelper.postTaskCompleteNotification(
-                applicationContext,
-                randomThreadIdentifier,
-                dartTask,
-                payload,
-                fetchDuration,
-                result ?: Result.failure(),
-            )
-        }
 
         // No result indicates we were signalled to stop by WorkManager.  The result is already
         // STOPPED, so no need to resolve another one.

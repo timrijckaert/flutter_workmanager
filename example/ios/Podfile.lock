@@ -38,11 +38,11 @@ EXTERNAL SOURCES:
 SPEC CHECKSUMS:
   Flutter: e0871f40cf51350855a761d2e70bf5af5b9b5de7
   integration_test: 13825b8a9334a850581300559b8839134b124670
-  path_provider_foundation: 29f094ae23ebbca9d3d0cec13889cd9060c0e943
+  path_provider_foundation: 3784922295ac71e43754bd15e0653ccfd36a147c
   permission_handler_apple: 9878588469a2b0d0fc1e048d9f43605f92e6cec2
-  shared_preferences_foundation: 5b919d13b803cadd15ed2dc053125c68730e5126
+  shared_preferences_foundation: b4c3b4cddf1c21f02770737f147a3f5da9d39695
   workmanager: 0afdcf5628bbde6924c21af7836fed07b42e30e6
 
-PODFILE CHECKSUM: b63d507eb7cc768afa26646638aaf07f371f6370
+PODFILE CHECKSUM: f1f673b308b29c90487ecf3ff69323d61453a8a9
 
 COCOAPODS: 1.14.3

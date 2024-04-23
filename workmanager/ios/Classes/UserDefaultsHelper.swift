@@ -15,7 +15,6 @@ struct UserDefaultsHelper {
 
     enum Key {
         case callbackHandle
-        case isDebug
 
         var stringValue: String {
             return "\(SwiftWorkmanagerPlugin.identifier).\(self)"
@@ -30,16 +29,6 @@ struct UserDefaultsHelper {
 
     static func getStoredCallbackHandle() -> Int64? {
         return getValue(for: .callbackHandle)
-    }
-
-    // MARK: isDebug
-
-    static func storeIsDebug(_ isDebug: Bool) {
-        store(isDebug, key: .isDebug)
-    }
-
-    static func getIsDebug() -> Bool {
-        return getValue(for: .isDebug) ?? false
     }
 
     // MARK: Private helper functions

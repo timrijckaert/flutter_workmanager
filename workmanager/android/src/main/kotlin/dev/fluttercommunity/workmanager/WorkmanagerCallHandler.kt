@@ -11,7 +11,6 @@ import androidx.work.PeriodicWorkRequest
 import androidx.work.WorkInfo
 import androidx.work.WorkManager
 import dev.fluttercommunity.workmanager.BackgroundWorker.Companion.DART_TASK_KEY
-import dev.fluttercommunity.workmanager.BackgroundWorker.Companion.IS_IN_DEBUG_MODE_KEY
 import dev.fluttercommunity.workmanager.BackgroundWorker.Companion.PAYLOAD_KEY
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
@@ -41,30 +40,35 @@ class WorkmanagerCallHandler(private val ctx: Context) : MethodChannel.MethodCal
                     extractedCall,
                     result,
                 )
+
             is WorkManagerCall.RegisterTask ->
                 RegisterTaskHandler.handle(
                     ctx,
                     extractedCall,
                     result,
                 )
+
             is WorkManagerCall.IsScheduled ->
                 IsScheduledHandler.handle(
                     ctx,
                     extractedCall,
                     result,
                 )
+
             is WorkManagerCall.CancelTask ->
                 UnregisterTaskHandler.handle(
                     ctx,
                     extractedCall,
                     result,
                 )
+
             is WorkManagerCall.Failed ->
                 FailedTaskHandler(extractedCall.code).handle(
                     ctx,
                     extractedCall,
                     result,
                 )
+
             is WorkManagerCall.Unknown -> UnknownTaskHandler.handle(ctx, extractedCall, result)
         }
     }
@@ -130,7 +134,6 @@ private object RegisterTaskHandler : CallHandler<WorkManagerCall.RegisterTask> {
             tag = convertedCall.tag,
             flexIntervalInSeconds = convertedCall.flexIntervalInSeconds,
             frequencyInSeconds = convertedCall.frequencyInSeconds,
-            isInDebugMode = convertedCall.isInDebugMode,
             existingWorkPolicy = convertedCall.existingWorkPolicy,
             initialDelaySeconds = convertedCall.initialDelaySeconds,
             constraintsConfig = convertedCall.constraintsConfig,
@@ -149,7 +152,6 @@ private object RegisterTaskHandler : CallHandler<WorkManagerCall.RegisterTask> {
             uniqueName = convertedCall.uniqueName,
             dartTask = convertedCall.taskName,
             tag = convertedCall.tag,
-            isInDebugMode = convertedCall.isInDebugMode,
             existingWorkPolicy = convertedCall.existingWorkPolicy,
             initialDelaySeconds = convertedCall.initialDelaySeconds,
             constraintsConfig = convertedCall.constraintsConfig,
@@ -190,6 +192,7 @@ private object UnregisterTaskHandler : CallHandler<WorkManagerCall.CancelTask> {
                     context,
                     convertedCall.uniqueName,
                 )
+
             is WorkManagerCall.CancelTask.ByTag -> WM.cancelByTag(context, convertedCall.tag)
             WorkManagerCall.CancelTask.All -> WM.cancelAll(context)
         }
@@ -224,7 +227,6 @@ object WM {
         dartTask: String,
         payload: String? = null,
         tag: String? = null,
-        isInDebugMode: Boolean = false,
         existingWorkPolicy: ExistingWorkPolicy = defaultOneOffExistingWorkPolicy,
         initialDelaySeconds: Long = DEFAULT_INITIAL_DELAY_SECONDS,
         constraintsConfig: Constraints = defaultConstraints,
@@ -233,7 +235,7 @@ object WM {
     ) {
         val oneOffTaskRequest =
             OneTimeWorkRequest.Builder(BackgroundWorker::class.java)
-                .setInputData(buildTaskInputData(dartTask, isInDebugMode, payload))
+                .setInputData(buildTaskInputData(dartTask, payload))
                 .setInitialDelay(initialDelaySeconds, TimeUnit.SECONDS)
                 .setConstraints(constraintsConfig)
                 .apply {
@@ -262,7 +264,6 @@ object WM {
         tag: String? = null,
         frequencyInSeconds: Long = DEFAULT_PERIODIC_REFRESH_FREQUENCY_SECONDS,
         flexIntervalInSeconds: Long = DEFAULT_FLEX_INTERVAL_SECONDS,
-        isInDebugMode: Boolean = false,
         existingWorkPolicy: ExistingPeriodicWorkPolicy = defaultPeriodExistingWorkPolicy,
         initialDelaySeconds: Long = DEFAULT_INITIAL_DELAY_SECONDS,
         constraintsConfig: Constraints = defaultConstraints,
@@ -277,7 +278,7 @@ object WM {
                 flexIntervalInSeconds,
                 TimeUnit.SECONDS,
             )
-                .setInputData(buildTaskInputData(dartTask, isInDebugMode, payload))
+                .setInputData(buildTaskInputData(dartTask, payload))
                 .setInitialDelay(initialDelaySeconds, TimeUnit.SECONDS)
                 .setConstraints(constraintsConfig)
                 .apply {
@@ -300,12 +301,10 @@ object WM {
 
     private fun buildTaskInputData(
         dartTask: String,
-        isInDebugMode: Boolean,
         payload: String?,
     ): Data {
         return Data.Builder()
             .putString(DART_TASK_KEY, dartTask)
-            .putBoolean(IS_IN_DEBUG_MODE_KEY, isInDebugMode)
             .apply {
                 payload?.let {
                     putString(PAYLOAD_KEY, payload)

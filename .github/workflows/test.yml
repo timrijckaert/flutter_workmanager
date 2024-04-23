@@ -28,24 +28,29 @@ jobs:
         with:
           channel: 'stable'
       - name: Build iOS App
-        run: cd example && flutter build ios --debug --no-codesign
-      - name: Run native iOS tests
-        run: cd example/ios && xcodebuild -workspace Runner.xcworkspace -scheme Runner -sdk iphonesimulator -destination 'platform=iOS Simulator,name=iPhone 12,OS=16.2' test
+        run: |
+          dart pub global activate melos
+          melos bootstrap
+          cd example && flutter build ios --debug --no-codesign
+          cd ios && xcodebuild -workspace Runner.xcworkspace -scheme Runner -sdk iphonesimulator -destination 'platform=iOS Simulator,name=iPhone 12,OS=16.2' test
 
   native_android_tests:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-java@v1
+      - uses: actions/setup-java@v4
         with:
-          java-version: 17
+          distribution: 'temurin'
+          java-version: '21'
       - uses: subosito/flutter-action@v1
         with:
           channel: 'stable'
       - name: Build Android App
-        run: cd example && flutter build apk --debug
-      - name: Run native Android tests
-        run: cd example/android && gradle workmanager:test
+        run: |
+          dart pub global activate melos
+          melos bootstrap
+          cd example && flutter build apk --debug
+          cd android && gradle workmanager:test
 
   drive_ios:
     strategy:
@@ -55,7 +60,7 @@ jobs:
       fail-fast: false
     runs-on: macos-latest
     steps:
-      - uses: futureware-tech/simulator-action@v1
+      - uses: futureware-tech/simulator-action@v3
         with:
           model: '${{ matrix.device }}'
       - uses: actions/checkout@v4
@@ -64,7 +69,10 @@ jobs:
           channel: 'stable'
       # Run flutter integrate tests
       - name: Run Flutter integration tests
-        run: cd example && flutter test integration_test/workmanager_integration_test.dart
+        run: |
+          dart pub global activate melos
+          melos bootstrap
+          cd example && flutter test integration_test/workmanager_integration_test.dart
 
 
   drive_android:
@@ -78,9 +86,10 @@ jobs:
         target: [default]
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-java@v1
+      - uses: actions/setup-java@v4
         with:
-          java-version: 17
+          distribution: 'temurin'
+          java-version: '21'
       - uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
@@ -89,4 +98,7 @@ jobs:
         with:
           api-level: ${{ matrix.api-level }}
           target: ${{ matrix.target }}
-          script: cd example && flutter test integration_test/workmanager_integration_test.dart
+          script: |
+            dart pub global activate melos
+            melos bootstrap
+            cd example && flutter test integration_test/workmanager_integration_test.dart

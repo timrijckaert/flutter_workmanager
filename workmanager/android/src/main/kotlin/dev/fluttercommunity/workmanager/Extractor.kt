@@ -13,7 +13,6 @@ import androidx.work.WorkRequest
 import dev.fluttercommunity.workmanager.WorkManagerCall.CancelTask.ByTag.KEYS.UNREGISTER_TASK_TAG_KEY
 import dev.fluttercommunity.workmanager.WorkManagerCall.CancelTask.ByUniqueName.KEYS.UNREGISTER_TASK_UNIQUE_NAME_KEY
 import dev.fluttercommunity.workmanager.WorkManagerCall.Initialize.KEYS.INITIALIZE_TASK_CALL_HANDLE_KEY
-import dev.fluttercommunity.workmanager.WorkManagerCall.Initialize.KEYS.INITIALIZE_TASK_IS_IN_DEBUG_MODE_KEY
 import dev.fluttercommunity.workmanager.WorkManagerCall.IsScheduled.ByUniqueName.KEYS.IS_SCHEDULED_UNIQUE_NAME_KEY
 import dev.fluttercommunity.workmanager.WorkManagerCall.RegisterTask.KEYS.REGISTER_TASK_BACK_OFF_POLICY_DELAY_MILLIS_KEY
 import dev.fluttercommunity.workmanager.WorkManagerCall.RegisterTask.KEYS.REGISTER_TASK_BACK_OFF_POLICY_TYPE_KEY
@@ -24,7 +23,6 @@ import dev.fluttercommunity.workmanager.WorkManagerCall.RegisterTask.KEYS.REGIST
 import dev.fluttercommunity.workmanager.WorkManagerCall.RegisterTask.KEYS.REGISTER_TASK_CONSTRAINTS_STORAGE_NOT_LOW_KEY
 import dev.fluttercommunity.workmanager.WorkManagerCall.RegisterTask.KEYS.REGISTER_TASK_EXISTING_WORK_POLICY_KEY
 import dev.fluttercommunity.workmanager.WorkManagerCall.RegisterTask.KEYS.REGISTER_TASK_INITIAL_DELAY_SECONDS_KEY
-import dev.fluttercommunity.workmanager.WorkManagerCall.RegisterTask.KEYS.REGISTER_TASK_IS_IN_DEBUG_MODE_KEY
 import dev.fluttercommunity.workmanager.WorkManagerCall.RegisterTask.KEYS.REGISTER_TASK_NAME_VALUE_KEY
 import dev.fluttercommunity.workmanager.WorkManagerCall.RegisterTask.KEYS.REGISTER_TASK_OUT_OF_QUOTA_POLICY_KEY
 import dev.fluttercommunity.workmanager.WorkManagerCall.RegisterTask.KEYS.REGISTER_TASK_PAYLOAD_KEY
@@ -59,16 +57,13 @@ data class BackoffPolicyTaskConfig(
 sealed class WorkManagerCall {
     data class Initialize(
         val callbackDispatcherHandleKey: Long,
-        val isInDebugMode: Boolean,
     ) : WorkManagerCall() {
         companion object KEYS {
-            const val INITIALIZE_TASK_IS_IN_DEBUG_MODE_KEY = "isInDebugMode"
             const val INITIALIZE_TASK_CALL_HANDLE_KEY = "callbackHandle"
         }
     }
 
     sealed class RegisterTask : WorkManagerCall() {
-        abstract val isInDebugMode: Boolean
         abstract val uniqueName: String
         abstract val taskName: String
         abstract val tag: String?
@@ -77,7 +72,6 @@ sealed class WorkManagerCall {
         abstract val payload: String?
 
         companion object KEYS {
-            const val REGISTER_TASK_IS_IN_DEBUG_MODE_KEY = "isInDebugMode"
             const val REGISTER_TASK_UNIQUE_NAME_KEY = "uniqueName"
             const val REGISTER_TASK_NAME_VALUE_KEY = "taskName"
             const val REGISTER_TASK_TAG_KEY = "tag"
@@ -98,7 +92,6 @@ sealed class WorkManagerCall {
         }
 
         data class OneOffTask(
-            override val isInDebugMode: Boolean,
             override val uniqueName: String,
             override val taskName: String,
             override val tag: String? = null,
@@ -111,7 +104,6 @@ sealed class WorkManagerCall {
         ) : RegisterTask()
 
         data class PeriodicTask(
-            override val isInDebugMode: Boolean,
             override val uniqueName: String,
             override val taskName: String,
             override val tag: String? = null,
@@ -194,17 +186,15 @@ object Extractor {
         when (PossibleWorkManagerCall.fromRawMethodName(call.method)) {
             PossibleWorkManagerCall.INITIALIZE -> {
                 val handle = call.argument<Number>(INITIALIZE_TASK_CALL_HANDLE_KEY)?.toLong()
-                val inDebugMode = call.argument<Boolean>(INITIALIZE_TASK_IS_IN_DEBUG_MODE_KEY)
 
-                if (handle == null || inDebugMode == null) {
+                if (handle == null) {
                     WorkManagerCall.Failed("Invalid parameters passed")
                 } else {
-                    WorkManagerCall.Initialize(handle, inDebugMode)
+                    WorkManagerCall.Initialize(handle)
                 }
             }
             PossibleWorkManagerCall.REGISTER_ONE_OFF_TASK -> {
                 WorkManagerCall.RegisterTask.OneOffTask(
-                    isInDebugMode = call.argument<Boolean>(REGISTER_TASK_IS_IN_DEBUG_MODE_KEY)!!,
                     uniqueName = call.argument<String>(REGISTER_TASK_UNIQUE_NAME_KEY)!!,
                     taskName = call.argument<String>(REGISTER_TASK_NAME_VALUE_KEY)!!,
                     tag = call.argument<String>(REGISTER_TASK_TAG_KEY),
@@ -222,7 +212,6 @@ object Extractor {
             }
             PossibleWorkManagerCall.REGISTER_PERIODIC_TASK -> {
                 WorkManagerCall.RegisterTask.PeriodicTask(
-                    isInDebugMode = call.argument<Boolean>(REGISTER_TASK_IS_IN_DEBUG_MODE_KEY)!!,
                     uniqueName = call.argument<String>(REGISTER_TASK_UNIQUE_NAME_KEY)!!,
                     taskName = call.argument<String>(REGISTER_TASK_NAME_VALUE_KEY)!!,
                     frequencyInSeconds = extractFrequencySecondsFromCall(call),
