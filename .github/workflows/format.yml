@@ -52,5 +52,4 @@ jobs:
           cd workmanager
           flutter pub get
           flutter pub publish -n
-          flutter pub global activate tuneup
-          flutter pub global run tuneup check
+          flutter pub dart analyze
