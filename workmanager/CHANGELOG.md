@@ -1,7 +1,8 @@
-# next
+# 0.5.3
 
 * Android: Removed jetifier
 * Android: Removed V1 plugin APIs - this is now a Android V2 plugin only
+* iOS: Added a PrivacyManifest
 
 # 0.5.2
 
