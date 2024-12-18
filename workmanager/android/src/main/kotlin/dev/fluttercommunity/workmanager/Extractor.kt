@@ -2,14 +2,7 @@ package dev.fluttercommunity.workmanager
 
 import android.os.Build
 import androidx.annotation.VisibleForTesting
-import androidx.work.BackoffPolicy
-import androidx.work.Constraints
-import androidx.work.ExistingPeriodicWorkPolicy
-import androidx.work.ExistingWorkPolicy
-import androidx.work.NetworkType
-import androidx.work.OutOfQuotaPolicy
-import androidx.work.PeriodicWorkRequest
-import androidx.work.WorkRequest
+import androidx.work.*
 import dev.fluttercommunity.workmanager.WorkManagerCall.CancelTask.ByTag.KEYS.UNREGISTER_TASK_TAG_KEY
 import dev.fluttercommunity.workmanager.WorkManagerCall.CancelTask.ByUniqueName.KEYS.UNREGISTER_TASK_UNIQUE_NAME_KEY
 import dev.fluttercommunity.workmanager.WorkManagerCall.Initialize.KEYS.INITIALIZE_TASK_CALL_HANDLE_KEY
@@ -159,7 +152,27 @@ sealed class WorkManagerCall {
 
     class Failed(val code: String) : WorkManagerCall()
 }
-
+data class SetForeground(
+    val foregroundServiceType: Int,
+    val notificationId: Int,
+    val notificationChannelId: String,
+    val notificationChannelName: String,
+    val notificationChannelDescription: String,
+    val notificationChannelImportance: Int,
+    val notificationTitle: String,
+    val notificationDescription: String,
+) {
+    companion object KEYS {
+        const val FOREGROUND_SERVICE_TYPE_KEY = "foregroundServiceType"
+        const val NOTIFICATION_ID_KEY = "notificationId"
+        const val NOTIFICATION_CHANNEL_ID_KEY = "notificationChannelId"
+        const val NOTIFICATION_CHANNEL_NAME_KEY = "notificationChannelName"
+        const val NOTIFICATION_CHANNEL_DESCRIPTION_KEY = "notificationChannelDescription"
+        const val NOTIFICATION_CHANNEL_IMPORTANCE_KEY = "notificationChannelImportance"
+        const val NOTIFICATION_TITLE_KEY = "notificationTitle"
+        const val NOTIFICATION_DESCRIPTION_KEY = "notificationDescription"
+    }
+}
 private enum class TaskType(val minimumBackOffDelay: Long) {
     ONE_OFF(WorkRequest.MIN_BACKOFF_MILLIS),
     PERIODIC(WorkRequest.MIN_BACKOFF_MILLIS),
@@ -190,6 +203,34 @@ object Extractor {
         }
     }
 
+    fun parseSetForegroundCall(call: MethodCall): SetForeground {
+        val foregroundServiceType =
+            call.argument<Int>(SetForeground.KEYS.FOREGROUND_SERVICE_TYPE_KEY)!!
+        val notificationId = call.argument<Int>(SetForeground.KEYS.NOTIFICATION_ID_KEY)!!
+        val notificationChannelId =
+            call.argument<String>(SetForeground.KEYS.NOTIFICATION_CHANNEL_ID_KEY)!!
+        val notificationChannelName =
+            call.argument<String>(SetForeground.KEYS.NOTIFICATION_CHANNEL_NAME_KEY)!!
+        val notificationChannelDescription =
+            call.argument<String>(SetForeground.KEYS.NOTIFICATION_CHANNEL_DESCRIPTION_KEY)!!
+        val notificationChannelImportance =
+            call.argument<Int>(SetForeground.KEYS.NOTIFICATION_CHANNEL_IMPORTANCE_KEY)!!
+        val notificationTitle =
+            call.argument<String>(SetForeground.KEYS.NOTIFICATION_TITLE_KEY)!!
+        val notificationDescription =
+            call.argument<String>(SetForeground.KEYS.NOTIFICATION_DESCRIPTION_KEY)!!
+        return SetForeground(
+            foregroundServiceType,
+            notificationId,
+            notificationChannelId,
+            notificationChannelName,
+            notificationChannelDescription,
+            notificationChannelImportance,
+            notificationTitle,
+            notificationDescription,
+        )
+    }
+
     fun extractWorkManagerCallFromRawMethodName(call: MethodCall): WorkManagerCall =
         when (PossibleWorkManagerCall.fromRawMethodName(call.method)) {
             PossibleWorkManagerCall.INITIALIZE -> {
@@ -202,6 +243,7 @@ object Extractor {
                     WorkManagerCall.Initialize(handle, inDebugMode)
                 }
             }
+
             PossibleWorkManagerCall.REGISTER_ONE_OFF_TASK -> {
                 WorkManagerCall.RegisterTask.OneOffTask(
                     isInDebugMode = call.argument<Boolean>(REGISTER_TASK_IS_IN_DEBUG_MODE_KEY)!!,
@@ -213,13 +255,14 @@ object Extractor {
                     constraintsConfig = extractConstraintConfigFromCall(call),
                     outOfQuotaPolicy = extractOutOfQuotaPolicyFromCall(call),
                     backoffPolicyConfig =
-                        extractBackoffPolicyConfigFromCall(
-                            call,
-                            TaskType.ONE_OFF,
-                        ),
+                    extractBackoffPolicyConfigFromCall(
+                        call,
+                        TaskType.ONE_OFF,
+                    ),
                     payload = extractPayload(call),
                 )
             }
+
             PossibleWorkManagerCall.REGISTER_PERIODIC_TASK -> {
                 WorkManagerCall.RegisterTask.PeriodicTask(
                     isInDebugMode = call.argument<Boolean>(REGISTER_TASK_IS_IN_DEBUG_MODE_KEY)!!,
@@ -232,10 +275,10 @@ object Extractor {
                     initialDelaySeconds = extractInitialDelayFromCall(call),
                     constraintsConfig = extractConstraintConfigFromCall(call),
                     backoffPolicyConfig =
-                        extractBackoffPolicyConfigFromCall(
-                            call,
-                            TaskType.PERIODIC,
-                        ),
+                    extractBackoffPolicyConfigFromCall(
+                        call,
+                        TaskType.PERIODIC,
+                    ),
                     outOfQuotaPolicy = extractOutOfQuotaPolicyFromCall(call),
                     payload = extractPayload(call),
                 )
@@ -251,12 +294,14 @@ object Extractor {
                 WorkManagerCall.CancelTask.ByUniqueName(
                     call.argument(UNREGISTER_TASK_UNIQUE_NAME_KEY)!!,
                 )
+
             PossibleWorkManagerCall.CANCEL_TASK_BY_TAG ->
                 WorkManagerCall.CancelTask.ByTag(
                     call.argument(
                         UNREGISTER_TASK_TAG_KEY,
                     )!!,
                 )
+
             PossibleWorkManagerCall.CANCEL_ALL -> WorkManagerCall.CancelTask.All
 
             PossibleWorkManagerCall.UNKNOWN -> WorkManagerCall.Unknown

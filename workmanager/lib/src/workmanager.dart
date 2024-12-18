@@ -75,8 +75,8 @@ typedef BackgroundTaskHandler = Future<bool> Function(
 class Workmanager {
   factory Workmanager() => _instance;
 
-  Workmanager._internal(
-      MethodChannel backgroundChannel, MethodChannel foregroundChannel)
+  Workmanager._internal(MethodChannel backgroundChannel,
+      MethodChannel foregroundChannel)
       : _backgroundChannel = backgroundChannel,
         _foregroundChannel = foregroundChannel;
 
@@ -150,14 +150,13 @@ class Workmanager {
   /// [callbackDispatcher] is a top level function which will be invoked by
   /// Android or iOS. See the discussion on [BackgroundTaskHandler] for details.
   /// [isInDebugMode] true will post debug notifications with information about when a task should have run
-  Future<void> initialize(
-    final Function callbackDispatcher, {
+  Future<void> initialize(final Function callbackDispatcher, {
     final bool isInDebugMode = false,
   }) async {
     Workmanager._isInDebugMode = isInDebugMode;
     final callback = PluginUtilities.getCallbackHandle(callbackDispatcher);
     assert(callback != null,
-        "The callbackDispatcher needs to be either a static function or a top level function to be accessible as a Flutter entry point.");
+    "The callbackDispatcher needs to be either a static function or a top level function to be accessible as a Flutter entry point.");
     if (callback != null) {
       final int handle = callback.toRawHandle();
       await _foregroundChannel.invokeMethod<void>(
@@ -179,31 +178,32 @@ class Workmanager {
   /// The [taskName] is the value that will be returned in the [BackgroundTaskHandler]
   /// The [inputData] is the input data for task. Valid value types are: int, bool, double, String and their list
   Future<void> registerOneOffTask(
-    /// Only supported on Android.
-    final String uniqueName,
 
-    /// Only supported on Android.
-    final String taskName, {
-    /// Only supported on Android.
-    final String? tag,
+      /// Only supported on Android.
+      final String uniqueName,
 
-    /// Only supported on Android.
-    final ExistingWorkPolicy? existingWorkPolicy,
+      /// Only supported on Android.
+      final String taskName, {
+        /// Only supported on Android.
+        final String? tag,
 
-    /// Configures a initial delay.
-    ///
-    /// The delay configured here is not guaranteed. The underlying system may
-    /// decide to schedule the ask a lot later.
-    final Duration initialDelay = Duration.zero,
+        /// Only supported on Android.
+        final ExistingWorkPolicy? existingWorkPolicy,
 
-    /// Fully supported on Android, but only partially supported on iOS.
-    /// See [Constraints] for details.
-    final Constraints? constraints,
-    final BackoffPolicy? backoffPolicy,
-    final Duration backoffPolicyDelay = Duration.zero,
-    final OutOfQuotaPolicy? outOfQuotaPolicy,
-    final Map<String, dynamic>? inputData,
-  }) async =>
+        /// Configures a initial delay.
+        ///
+        /// The delay configured here is not guaranteed. The underlying system may
+        /// decide to schedule the ask a lot later.
+        final Duration initialDelay = Duration.zero,
+
+        /// Fully supported on Android, but only partially supported on iOS.
+        /// See [Constraints] for details.
+        final Constraints? constraints,
+        final BackoffPolicy? backoffPolicy,
+        final Duration backoffPolicyDelay = Duration.zero,
+        final OutOfQuotaPolicy? outOfQuotaPolicy,
+        final Map<String, dynamic>? inputData,
+      }) async =>
       await _foregroundChannel.invokeMethod(
         "registerOneOffTask",
         JsonMapperHelper.toRegisterMethodArgument(
@@ -242,20 +242,19 @@ class Workmanager {
   /// [iOS 13+ Using background tasks to update your app](https://developer.apple.com/documentation/uikit/app_and_environment/scenes/preparing_your_ui_to_run_in_the_background/using_background_tasks_to_update_your_app/)
   ///
   /// [iOS 13+ BGAppRefreshTask](https://developer.apple.com/documentation/backgroundtasks/bgapprefreshtask/)
-  Future<void> registerPeriodicTask(
-    final String uniqueName,
-    final String taskName, {
-    final Duration? frequency,
-    final Duration? flexInterval,
-    final String? tag,
-    final ExistingWorkPolicy? existingWorkPolicy,
-    final Duration initialDelay = Duration.zero,
-    final Constraints? constraints,
-    final BackoffPolicy? backoffPolicy,
-    final Duration backoffPolicyDelay = Duration.zero,
-    final OutOfQuotaPolicy? outOfQuotaPolicy,
-    final Map<String, dynamic>? inputData,
-  }) async =>
+  Future<void> registerPeriodicTask(final String uniqueName,
+      final String taskName, {
+        final Duration? frequency,
+        final Duration? flexInterval,
+        final String? tag,
+        final ExistingWorkPolicy? existingWorkPolicy,
+        final Duration initialDelay = Duration.zero,
+        final Constraints? constraints,
+        final BackoffPolicy? backoffPolicy,
+        final Duration backoffPolicyDelay = Duration.zero,
+        final OutOfQuotaPolicy? outOfQuotaPolicy,
+        final Map<String, dynamic>? inputData,
+      }) async =>
       await _foregroundChannel.invokeMethod(
         "registerPeriodicTask",
         JsonMapperHelper.toRegisterMethodArgument(
@@ -299,15 +298,14 @@ class Workmanager {
   /// [iOS 13+ Using background tasks to update your app](https://developer.apple.com/documentation/uikit/app_and_environment/scenes/preparing_your_ui_to_run_in_the_background/using_background_tasks_to_update_your_app/)
   ///
   /// [iOS 13+ BGProcessingTask](https://developer.apple.com/documentation/backgroundtasks/bgprocessingtask/)
-  Future<void> registerProcessingTask(
-    final String uniqueName,
-    final String taskName, {
-    final Duration initialDelay = Duration.zero,
+  Future<void> registerProcessingTask(final String uniqueName,
+      final String taskName, {
+        final Duration initialDelay = Duration.zero,
 
-    /// Only partially supported on iOS.
-    /// See [Constraints] for details.
-    final Constraints? constraints,
-  }) async =>
+        /// Only partially supported on iOS.
+        /// See [Constraints] for details.
+        final Constraints? constraints,
+      }) async =>
       await _foregroundChannel.invokeMethod(
         "registerProcessingTask",
         JsonMapperHelper.toRegisterMethodArgument(
@@ -336,6 +334,10 @@ class Workmanager {
   /// Cancels all tasks
   Future<void> cancelAll() async =>
       await _foregroundChannel.invokeMethod("cancelAllTasks");
+
+  /// Sets the foreground options for the task.
+  Future<void> setForeground(SetForegroundOptions options) async =>
+      await _backgroundChannel.invokeMethod("setForeground", options.toMap());
 
   /// Prints details of un-executed scheduled tasks to console. To be used during
   /// development/debugging.
@@ -416,5 +418,98 @@ class JsonMapperHelper {
   }
 
   static String? _enumToString(final dynamic enumeration) =>
-      enumeration?.toString().split('.').last;
+      enumeration
+          ?.toString()
+          .split('.')
+          .last;
+}
+
+class SetForegroundOptions {
+  final int foregroundServiceType;
+  final int notificationId;
+
+  final String notificationChannelId;
+  final String notificationChannelName;
+  final String notificationChannelDescription;
+  final int notificationChannelImportance;
+
+  final String notificationTitle;
+  final String notificationDescription;
+
+  SetForegroundOptions({required this.foregroundServiceType,
+    required this.notificationId,
+    required this.notificationChannelId,
+    required this.notificationChannelName,
+    required this.notificationChannelDescription,
+    required this.notificationChannelImportance,
+    required this.notificationTitle,
+    required this.notificationDescription});
+
+  Map<String, dynamic> toMap() {
+    return {
+      "foregroundServiceType": foregroundServiceType,
+      "notificationId": notificationId,
+      "notificationChannelId": notificationChannelId,
+      "notificationChannelName": notificationChannelName,
+      "notificationChannelDescription": notificationChannelDescription,
+      "notificationChannelImportance": notificationChannelImportance,
+      "notificationTitle": notificationTitle,
+      "notificationDescription": notificationDescription,
+    };
+  }
+
+  SetForegroundOptions copyWith({
+    int? foregroundServiceType,
+    int? notificationId,
+    String? notificationChannelId,
+    String? notificationChannelName,
+    String? notificationChannelDescription,
+    int? notificationChannelImportance,
+    String? notificationTitle,
+    String? notificationDescription,
+  }) {
+    return SetForegroundOptions(
+      foregroundServiceType:
+      foregroundServiceType ?? this.foregroundServiceType,
+      notificationId: notificationId ?? this.notificationId,
+      notificationChannelId:
+      notificationChannelId ?? this.notificationChannelId,
+      notificationChannelName:
+      notificationChannelName ?? this.notificationChannelName,
+      notificationChannelDescription:
+      notificationChannelDescription ?? this.notificationChannelDescription,
+      notificationChannelImportance:
+      notificationChannelImportance ?? this.notificationChannelImportance,
+      notificationTitle: notificationTitle ?? this.notificationTitle,
+      notificationDescription:
+      notificationDescription ?? this.notificationDescription,
+    );
+  }
+}
+
+class ForegroundServiceType {
+  static const int dataSync = 1 << 0;
+  static const int mediaPlayback = 1 << 1;
+  static const int phoneCall = 1 << 2;
+  static const int location = 1 << 3;
+  static const int connectedDevice = 1 << 4;
+  static const int mediaProjection = 1 << 5;
+  static const int camera = 1 << 6;
+  static const int microphone = 1 << 7;
+  static const int health = 1 << 8;
+  static const int remoteMessaging = 1 << 9;
+  static const int systemExempted = 1 << 10;
+  static const int shortService = 1 << 11;
+  static const int fileManagement = 1 << 12;
+  static const int specialUse = 1 << 30;
+  static const int manifest = -1;
+}
+
+class NotificationImportance {
+  static const int none = 0;
+  static const int min = 1;
+  static const int low = 2;
+  static const int defaultImportance = 3;
+  static const int high = 4;
+  static const int max = 5;
 }

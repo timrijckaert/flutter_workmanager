@@ -1,10 +1,15 @@
 package dev.fluttercommunity.workmanager
 
+import android.app.NotificationChannel
+import android.app.NotificationManager
 import android.content.Context
+import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
 import androidx.concurrent.futures.CallbackToFutureAdapter
+import androidx.core.app.NotificationCompat
+import androidx.work.ForegroundInfo
 import androidx.work.ListenableWorker
 import androidx.work.WorkerParameters
 import com.google.common.util.concurrent.ListenableFuture
@@ -14,7 +19,8 @@ import io.flutter.embedding.engine.loader.FlutterLoader
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
 import io.flutter.view.FlutterCallbackInformation
-import java.util.Random
+import java.util.*
+
 
 /***
  * A simple worker that will post your input back to your Flutter application.
@@ -37,6 +43,7 @@ class BackgroundWorker(
         const val BACKGROUND_CHANNEL_NAME =
             "be.tramckrijte.workmanager/background_channel_work_manager"
         const val BACKGROUND_CHANNEL_INITIALIZED = "backgroundChannelInitialized"
+        const val SET_FOREGROUND = "setForeground"
 
         private val flutterLoader = FlutterLoader()
     }
@@ -62,6 +69,42 @@ class BackgroundWorker(
             this.completer = completer
             null
         }
+
+    private fun createForegroundInfo(
+        setForegroundOptions: SetForeground
+    ): ForegroundInfo {
+        // Create a Notification channel if necessary
+        createNotificationChannel(
+            setForegroundOptions.notificationChannelId,
+            setForegroundOptions.notificationChannelName,
+            setForegroundOptions.notificationChannelDescription,
+            setForegroundOptions.notificationChannelImportance
+        )
+        val notification = NotificationCompat.Builder(applicationContext, setForegroundOptions.notificationChannelId)
+            .setContentTitle(setForegroundOptions.notificationTitle)
+            .setTicker(setForegroundOptions.notificationTitle)
+            .setContentText(setForegroundOptions.notificationDescription)
+            .setOngoing(true)
+            .setSmallIcon(android.R.drawable.ic_dialog_info)
+            .build()
+
+        return ForegroundInfo(
+            setForegroundOptions.notificationId,
+            notification,
+            setForegroundOptions.foregroundServiceType
+        )
+    }
+
+    private fun createNotificationChannel(id: String, name: String, description: String, importance: Int) {
+        // Create a Notification channel
+        // Notification channels are only available in OREO and higher.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val mChannel = NotificationChannel(id, name, importance)
+            mChannel.description = description
+            val notificationManager = applicationContext.getSystemService(NotificationManager::class.java)
+            notificationManager.createNotificationChannel(mChannel)
+        }
+    }
 
     override fun startWork(): ListenableFuture<Result> {
         startTime = System.currentTimeMillis()
@@ -141,35 +184,46 @@ class BackgroundWorker(
         }
     }
 
+    private fun onBackgroundChannelInitialized() {
+        backgroundChannel.invokeMethod(
+            "onResultSend",
+            mapOf(DART_TASK_KEY to dartTask, PAYLOAD_KEY to payload),
+            object : MethodChannel.Result {
+                override fun notImplemented() {
+                    stopEngine(Result.failure())
+                }
+
+                override fun error(
+                    errorCode: String,
+                    errorMessage: String?,
+                    errorDetails: Any?,
+                ) {
+                    Log.e(TAG, "errorCode: $errorCode, errorMessage: $errorMessage")
+                    stopEngine(Result.failure())
+                }
+
+                override fun success(receivedResult: Any?) {
+                    val wasSuccessFul = receivedResult?.let { it as Boolean? } == true
+                    stopEngine(if (wasSuccessFul) Result.success() else Result.retry())
+                }
+            },
+        )
+    }
+
+    private fun onSetForeground(setForegroundOptions: SetForeground) {
+        setForegroundAsync(createForegroundInfo(setForegroundOptions))
+    }
+
     override fun onMethodCall(
         call: MethodCall,
         r: MethodChannel.Result,
     ) {
         when (call.method) {
             BACKGROUND_CHANNEL_INITIALIZED ->
-                backgroundChannel.invokeMethod(
-                    "onResultSend",
-                    mapOf(DART_TASK_KEY to dartTask, PAYLOAD_KEY to payload),
-                    object : MethodChannel.Result {
-                        override fun notImplemented() {
-                            stopEngine(Result.failure())
-                        }
+                onBackgroundChannelInitialized()
 
-                        override fun error(
-                            errorCode: String,
-                            errorMessage: String?,
-                            errorDetails: Any?,
-                        ) {
-                            Log.e(TAG, "errorCode: $errorCode, errorMessage: $errorMessage")
-                            stopEngine(Result.failure())
-                        }
-
-                        override fun success(receivedResult: Any?) {
-                            val wasSuccessFul = receivedResult?.let { it as Boolean? } == true
-                            stopEngine(if (wasSuccessFul) Result.success() else Result.retry())
-                        }
-                    },
-                )
+            SET_FOREGROUND -> onSetForeground(Extractor.parseSetForegroundCall(call))
         }
+        r.success(null)
     }
 }
