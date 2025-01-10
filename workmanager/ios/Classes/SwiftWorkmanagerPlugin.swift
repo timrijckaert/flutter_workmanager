@@ -395,8 +395,8 @@ extension SwiftWorkmanagerPlugin: FlutterPlugin {
             SwiftWorkmanagerPlugin.scheduleBackgroundProcessingTask(
                 withIdentifier: uniqueTaskIdentifier,
                 earliestBeginInSeconds: delaySeconds,
-                requiresNetworkConnectivity: requiresCharging,
-                requiresExternalPower: requiresNetwork)
+                requiresNetworkConnectivity: requiresNetwork,
+                requiresExternalPower: requiresCharging)
 
             result(true)
             return
