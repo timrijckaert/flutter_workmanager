@@ -456,15 +456,17 @@ extension SwiftWorkmanagerPlugin: FlutterPlugin {
         if #available(iOS 13.0, *) {
             BGTaskScheduler.shared.getPendingTaskRequests { taskRequests in
                 if taskRequests.isEmpty {
-                    print("[BGTaskScheduler] There are no scheduled tasks")
-                    result(true)
+                    let str = "[BGTaskScheduler] There are no scheduled tasks"
+                    print(str)
+                    result(str)
                     return
                 }
-                print("[BGTaskScheduler] Scheduled Tasks:")
+                var str = "[BGTaskScheduler] Scheduled Tasks:"
                 for taskRequest in taskRequests {
-                    print("[BGTaskScheduler] Task Identifier: \(taskRequest.identifier) earliestBeginDate: \(taskRequest.earliestBeginDate?.formatted() ?? "")")
+                    str += "\n[BGTaskScheduler] Task Identifier: \(taskRequest.identifier) earliestBeginDate: \(taskRequest.earliestBeginDate?.formatted() ?? "")"
                 }
-                result(true)
+                print(str)
+                result(str)
             }
         } else {
             result(FlutterError(code: "99",
